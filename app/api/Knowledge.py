@@ -16,10 +16,16 @@ def authorize(api_key):
     expected = os.getenv("BRAIN_API_KEY", "")
 
     if not expected or not api_key:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized"
+        )
 
     if not hmac.compare_digest(api_key, expected):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized"
+        )
 
 
 def get_connection():
@@ -58,6 +64,7 @@ def save_document(
                 """,
                 (data.user_id, data.title, data.content)
             )
+
             document_id = cur.fetchone()[0]
 
     return {
@@ -85,6 +92,7 @@ def get_documents(
                 """,
                 (user_id,)
             )
+
             rows = cur.fetchall()
 
     return {
@@ -125,6 +133,7 @@ def search_documents(
                 """,
                 (user_id, f"%{q}%", f"%{q}%")
             )
+
             rows = cur.fetchall()
 
     return {
