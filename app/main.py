@@ -1,11 +1,15 @@
 
 from fastapi import FastAPI
 from app.db import check_database
+from app.api.memory import router as memory_router
 
 app = FastAPI(
     title="Neuralix Brain",
+    description="Independent AI Brain API",
     version="1.0.0"
 )
+
+app.include_router(memory_router)
 
 
 @app.get("/")
