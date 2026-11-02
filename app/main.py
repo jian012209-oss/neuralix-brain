@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from app.db import check_database
 from app.api.memory import router as memory_router
+from app.api.knowledge import router as knowledge_router
 
 app = FastAPI(
     title="Neuralix Brain",
@@ -9,7 +10,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Register API routers
 app.include_router(memory_router)
+app.include_router(knowledge_router)
 
 
 @app.get("/")
@@ -23,7 +26,9 @@ def home():
 
 @app.get("/health")
 def health():
-    return {"healthy": True}
+    return {
+        "healthy": True
+    }
 
 
 @app.get("/db-health")
