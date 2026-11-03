@@ -1,0 +1,22 @@
+NEURALIX BRAIN UPGRADE — DEPLOYMENT
+
+1. Back up the GitHub repository and Neon database before replacing files.
+2. Upload/replace these files at the repository root:
+   - Dockerfile
+   - render.yaml
+   - requirements.txt
+   - README.md
+3. Upload database/schema.sql into a new database/ folder.
+4. In Neon SQL Editor, run database/schema.sql. It is designed to be safe to re-run.
+5. In Render, confirm the service is connected to the neuralix-brain repository and deploy branch main.
+6. Set these Render environment variables (use your existing values; do not paste secrets into chat):
+   DATABASE_URL
+   BRAIN_API_KEY
+   GEMINI_API_KEY
+   GEMINI_MODEL = gemini-3.1-flash-lite
+7. Deploy. Verify:
+   GET https://YOUR-RENDER-SERVICE.onrender.com/health
+   GET https://YOUR-RENDER-SERVICE.onrender.com/db-health
+
+IMPORTANT:
+This bundle supplies deployment and schema files, not a complete rewrite of the existing API routers. Existing API endpoints still require the shared X-Brain-Api-Key and trust user_id supplied by the calling server. Keep the Brain service private to your trusted Neuralix AI backend. Do not expose the key in the frontend.
