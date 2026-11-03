@@ -6,11 +6,17 @@ import psycopg
 from fastapi import APIRouter, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.engines.embedding_engine import create_embedding
+
 router = APIRouter(
     prefix="/v1/knowledge",
     tags=["Knowledge"]
 )
 
+
+# -------------------------
+# SECURITY
+# -------------------------
 
 def authorize(api_key):
     expected = os.getenv("BRAIN_API_KEY", "")
@@ -28,6 +34,10 @@ def authorize(api_key):
         )
 
 
+# -------------------------
+# DATABASE CONNECTION
+# -------------------------
+
 def get_connection():
     database_url = os.getenv("DATABASE_URL")
 
@@ -40,11 +50,19 @@ def get_connection():
     return psycopg.connect(database_url)
 
 
+# -------------------------
+# INPUT MODEL
+# -------------------------
+
 class KnowledgeInput(BaseModel):
     user_id: str = Field(min_length=1, max_length=200)
     title: str = Field(min_length=1, max_length=300)
     content: str = Field(min_length=1, max_length=20000)
 
+
+# -------------------------
+# SAVE DOCUMENT + EMBEDDING
+# -------------------------
 
 @router.post("")
 def save_document(
@@ -53,25 +71,46 @@ def save_document(
 ):
     authorize(x_brain_api_key)
 
+    # Generate embedding
+    embedding = create_embedding(
+        data.title + "\n" + data.content
+    )
+
+    # Convert embedding to PostgreSQL vector format
+    embedding_text = "[" + ",".join(
+        str(float(value)) for value in embedding
+    ) + "]"
+
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 INSERT INTO knowledge_documents
-                (user_id, title, content)
-                VALUES (%s, %s, %s)
+                (user_id, title, content, embedding)
+                VALUES (%s, %s, %s, %s::vector)
                 RETURNING id
                 """,
-                (data.user_id, data.title, data.content)
+                (
+                    data.user_id,
+                    data.title,
+                    data.content,
+                    embedding_text
+                )
             )
 
             document_id = cur.fetchone()[0]
 
     return {
         "saved": True,
-        "id": document_id
+        "id": document_id,
+        "embedding_created": True,
+        "embedding_dimensions": len(embedding)
     }
 
+
+# -------------------------
+# GET DOCUMENTS
+# -------------------------
 
 @router.get("/{user_id}")
 def get_documents(
@@ -109,6 +148,10 @@ def get_documents(
     }
 
 
+# -------------------------
+# KEYWORD SEARCH
+# -------------------------
+
 @router.get("/search/{user_id}")
 def search_documents(
     user_id: str,
@@ -131,7 +174,11 @@ def search_documents(
                 ORDER BY created_at DESC
                 LIMIT 20
                 """,
-                (user_id, f"%{q}%", f"%{q}%")
+                (
+                    user_id,
+                    f"%{q}%",
+                    f"%{q}%"
+                )
             )
 
             rows = cur.fetchall()
