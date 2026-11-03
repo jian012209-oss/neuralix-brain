@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from app.db import check_database
 
 from app.api.memory import router as memory_router
+from app.api.memory_suggestions import router as memory_suggestions_router
 from app.api.knowledge import router as knowledge_router
 from app.api.chat import router as chat_router
 from app.api.feedback import router as feedback_router
@@ -12,12 +13,13 @@ from app.api.feedback import router as feedback_router
 app = FastAPI(
     title="Neuralix Brain",
     description="Independent AI Brain API",
-    version="1.1.0"
+    version="1.2.0"
 )
 
 
 # Register API routers
 app.include_router(memory_router)
+app.include_router(memory_suggestions_router)
 app.include_router(knowledge_router)
 app.include_router(chat_router)
 app.include_router(feedback_router)
