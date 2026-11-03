@@ -1,8 +1,12 @@
 
 from fastapi import FastAPI
+
 from app.db import check_database
+
 from app.api.memory import router as memory_router
 from app.api.knowledge import router as knowledge_router
+from app.api.chat import router as chat_router
+
 
 app = FastAPI(
     title="Neuralix Brain",
@@ -10,9 +14,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Register API routers
+
+# Register API routes
 app.include_router(memory_router)
 app.include_router(knowledge_router)
+app.include_router(chat_router)
 
 
 @app.get("/")
