@@ -4,3 +4,4 @@ pydantic-settings
 sqlalchemy
 psycopg[binary]
 python-multipart
+huggingface_hub
