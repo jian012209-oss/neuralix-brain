@@ -2,9 +2,10 @@
 import os
 import hmac
 import psycopg
+from typing import Literal
 
 from fastapi import APIRouter, Header, HTTPException
-from pydantic import BaseModel, Field, Literal
+from pydantic import BaseModel, Field
 
 router = APIRouter(
     prefix="/v1/conversations",
@@ -16,10 +17,16 @@ def authorize(api_key):
     expected = os.getenv("BRAIN_API_KEY", "")
 
     if not expected or not api_key:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized"
+        )
 
     if not hmac.compare_digest(api_key, expected):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized"
+        )
 
 
 def get_connection():
