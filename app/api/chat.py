@@ -59,13 +59,38 @@ def get_connection():
 
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
-    content: str = Field(min_length=1, max_length=10000)
+    content: str = Field(
+        min_length=1,
+        max_length=10000
+    )
 
 
 class ChatInput(BaseModel):
-    user_id: str = Field(min_length=1, max_length=200)
-    message: str = Field(min_length=1, max_length=10000)
-    history: list[ChatMessage] = Field(default_factory=list, max_length=20)
+    user_id: str = Field(
+        min_length=1,
+        max_length=200
+    )
+
+    message: str = Field(
+        min_length=1,
+        max_length=20000
+    )
+
+    history: list[ChatMessage] = Field(
+        default_factory=list,
+        max_length=20
+    )
+
+    system_instruction: str = Field(
+        default="",
+        max_length=12000
+    )
+
+    max_output_tokens: int = Field(
+        default=2048,
+        ge=128,
+        le=4096
+    )
 
 
 # -------------------------
@@ -149,13 +174,13 @@ def chat(
             data.message
         )
 
-        # Build memory context
+        # Build memory context.
         memory_context = "\n".join(
             f"- Category: {category}; Memory: {memory}"
             for memory, category in memories
         )
 
-        # Build knowledge context
+        # Build knowledge context.
         knowledge_context = "\n".join(
             f"- Title: {title}\n  Content: {content}"
             for title, content, similarity in knowledge
@@ -167,7 +192,8 @@ def chat(
         if not knowledge_context:
             knowledge_context = "No relevant knowledge found."
 
-        system_instruction = """
+        # Base Brain instructions.
+        base_instruction = """
 You are Neuralix Brain, the intelligence backend of Neuralix AI.
 
 Your responsibilities:
@@ -187,7 +213,16 @@ SAVED MEMORIES:
 RETRIEVED KNOWLEDGE:
 """ + knowledge_context
 
-        # Prepare conversation history
+        # Add instructions sent by Neuralix App.
+        system_instruction = base_instruction
+
+        if data.system_instruction.strip():
+            system_instruction += (
+                "\n\nADDITIONAL NEURALIX APP INSTRUCTIONS:\n"
+                + data.system_instruction
+            )
+
+        # Prepare conversation history.
         conversation = []
 
         for item in data.history:
@@ -207,6 +242,7 @@ RETRIEVED KNOWLEDGE:
 
         prompt = "\n\n".join(conversation)
 
+        # Connect to Gemini.
         client = genai.Client(api_key=api_key)
 
         model_name = os.getenv(
@@ -220,7 +256,7 @@ RETRIEVED KNOWLEDGE:
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 temperature=0.7,
-                max_output_tokens=2048
+                max_output_tokens=data.max_output_tokens
             )
         )
 
@@ -247,5 +283,8 @@ RETRIEVED KNOWLEDGE:
     except Exception:
         raise HTTPException(
             status_code=502,
-            detail="Chat generation failed. Check the Render logs, Gemini model availability, API quota, and database connection."
+            detail=(
+                "Chat generation failed. Check the Render logs, "
+                "Gemini model availability, API quota, and database connection."
+            )
         )
